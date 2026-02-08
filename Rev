@@ -1,0 +1,49 @@
+
+import streamlit as st
+import pandas as pd
+
+st.set_page_config(page_title="Simulador Revolving", layout="wide")
+
+st.title("💳 Simulador de Prestamo Revolving - Metodo Frances")
+
+def cuota_francesa(capital, interes_anual, meses):
+    i = interes_anual / 12 / 100
+    return capital * (i * (1 + i) ** meses) / ((1 + i) ** meses - 1)
+
+def simulador(capital, interes, meses):
+    saldo = capital
+    i = interes / 12 / 100
+    cuota = cuota_francesa(capital, interes, meses)
+    datos = []
+
+    for mes in range(1, meses + 1):
+        interes_mes = saldo * i
+        amort = cuota - interes_mes
+        saldo -= amort
+
+        datos.append({
+            "Mes": mes,
+            "Cuota": round(cuota, 2),
+            "Intereses": round(interes_mes, 2),
+            "Amortizacion": round(amort, 2),
+            "Saldo": round(max(saldo, 0), 2)
+        })
+
+        if saldo <= 0:
+            break
+
+    return pd.DataFrame(datos)
+
+capital = st.number_input("Capital inicial (€)", 0.0, 1000000.0, 10000.0)
+interes = st.number_input("Interes anual (%)", 0.0, 100.0, 18.0)
+meses = st.number_input("Plazo (meses)", 1, 600, 60)
+
+if st.button("Calcular"):
+    tabla = simulador(capital, interes, meses)
+    st.dataframe(tabla, use_container_width=True)
+
+    st.download_button(
+        "Descargar Excel",
+        tabla.to_excel(index=False),
+        "amortizacion_revolving.xlsx"
+    )
