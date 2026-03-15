@@ -2,7 +2,7 @@ import streamlit as st
 import random
 import time
 
-st.set_page_config(page_title="BABOK Chapter 1 Trainer – Full Multi-Step Hard", page_icon="📘")
+st.set_page_config(page_title="BABOK Trainer", page_icon="📘")
 st.title("BABOK Chapter 1 Trainer – Full Multi-Step Hard Scenarios")
 
 EXAM_TIME = 60*60
@@ -10,9 +10,8 @@ TRAINING_QUESTIONS = 10
 EXAM_QUESTIONS = 10
 
 # -------------------------
-# FUNCIONES PARA GENERAR PREGUNTAS
+# GENERAR PREGUNTAS
 # -------------------------
-
 def generate_easy_questions():
     questions = []
     for i in range(50):
@@ -27,7 +26,7 @@ def generate_easy_questions():
             "question": f"[Easy] Q{i+1}: Which concept represents the benefit perceived by stakeholders?",
             "options":["Need","Value","Context","Solution"],
             "answer":1,
-            "explanation":"Value is the benefit or importance to stakeholders.",
+            "explanation":"Value is the benefit perceived by stakeholders.",
             "difficulty":"easy"
         })
     return questions
@@ -94,7 +93,7 @@ def generate_hard_questions():
     return questions
 
 # -------------------------
-# GENERAR BANCO COMPLETO
+# CREAR BANCO COMPLETO
 # -------------------------
 question_bank = []
 question_bank.extend(generate_easy_questions())    # 50 Easy
@@ -109,14 +108,13 @@ mode = st.sidebar.radio("Select Mode", ["Training Mode","Exam Mode"])
 
 # Filtrar preguntas según nivel
 filtered_questions = [q for q in question_bank if q["difficulty"] == level.lower()]
-
 question_count = TRAINING_QUESTIONS if mode=="Training Mode" else EXAM_QUESTIONS
 
 # -------------------------
-# SESSION STATE
+# SESSION STATE: actualizar cuando cambia el nivel
 # -------------------------
-if "questions" not in st.session_state or st.session_state.get("level_selected") != level:
-    st.session_state.questions = random.sample(filtered_questions, question_count)
+if "level_selected" not in st.session_state or st.session_state.level_selected != level:
+    st.session_state.questions = random.sample(filtered_questions, min(question_count, len(filtered_questions)))
     st.session_state.answers = {}
     st.session_state.start_time = time.time()
     st.session_state.finished = False
@@ -134,7 +132,7 @@ if mode=="Exam Mode":
         st.session_state.finished = True
 
 # -------------------------
-# PREGUNTAS
+# MOSTRAR PREGUNTAS
 # -------------------------
 for i,q in enumerate(st.session_state.questions):
     st.subheader(f"Question {i+1}")
@@ -142,13 +140,13 @@ for i,q in enumerate(st.session_state.questions):
     st.session_state.answers[i] = q["options"].index(ans)
 
 # -------------------------
-# SUBMIT
+# BOTÓN SUBMIT
 # -------------------------
 if st.button("Submit"):
     st.session_state.finished = True
 
 # -------------------------
-# RESULTADOS
+# MOSTRAR RESULTADOS
 # -------------------------
 if st.session_state.finished:
     score=0
@@ -167,10 +165,10 @@ if st.session_state.finished:
     st.subheader(f"Score: {score}/{len(st.session_state.questions)}")
 
 # -------------------------
-# NUEVO INTENTO
+# BOTÓN NUEVO INTENTO
 # -------------------------
 if st.button("New Attempt"):
-    st.session_state.questions = random.sample(filtered_questions, question_count)
+    st.session_state.questions = random.sample(filtered_questions, min(question_count, len(filtered_questions)))
     st.session_state.answers = {}
     st.session_state.start_time = time.time()
     st.session_state.finished = False
