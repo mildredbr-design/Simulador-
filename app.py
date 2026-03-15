@@ -4,16 +4,21 @@ import time
 import pandas as pd
 import os
 
-st.set_page_config(page_title="BABOK Exam Platform", page_icon="📘", layout="wide")
+st.set_page_config(page_title="BABOK Training App", page_icon="📘")
 
-st.title("BABOK Certification Training Platform")
+st.title("BABOK Certification Trainer")
+
+# -----------------------
+# CONFIG
+# -----------------------
 
 EXAM_TIME = 60 * 60
-QUESTION_COUNT = 10
+PRACTICE_QUESTIONS = 5
+EXAM_QUESTIONS = 10
 
-# -----------------------------
+# -----------------------
 # QUESTION BANK
-# -----------------------------
+# -----------------------
 
 question_bank = [
 
@@ -123,97 +128,82 @@ question_bank = [
 
 ]
 
-# -----------------------------
-# SIDEBAR CONTROLS
-# -----------------------------
+# -----------------------
+# MODE SELECTION
+# -----------------------
 
-mode = st.sidebar.selectbox(
-"Mode",
-["Study Mode","Exam Simulation"]
+mode = st.sidebar.radio(
+"Select Mode",
+["Practice Mode","Real Exam Mode"]
 )
 
-selected_chapter = st.sidebar.selectbox(
-"Chapter",
-["All","1"]
-)
+question_count = PRACTICE_QUESTIONS if mode == "Practice Mode" else EXAM_QUESTIONS
 
-if selected_chapter != "All":
-    filtered_questions = [q for q in question_bank if q["chapter"] == selected_chapter]
-else:
-    filtered_questions = question_bank
-
-# -----------------------------
+# -----------------------
 # SESSION STATE
-# -----------------------------
+# -----------------------
 
 if "questions" not in st.session_state:
 
-    st.session_state.questions = random.sample(filtered_questions, min(QUESTION_COUNT,len(filtered_questions)))
+    st.session_state.questions = random.sample(question_bank, min(question_count,len(question_bank)))
     st.session_state.answers = {}
     st.session_state.start_time = time.time()
     st.session_state.finished = False
-    st.session_state.score = 0
 
-# -----------------------------
-# TIMER
-# -----------------------------
+# -----------------------
+# TIMER (only exam)
+# -----------------------
 
-if mode == "Exam Simulation":
+if mode == "Real Exam Mode":
 
     remaining = EXAM_TIME - (time.time() - st.session_state.start_time)
 
-    minutes = int(remaining//60)
-    seconds = int(remaining%60)
+    minutes = int(remaining // 60)
+    seconds = int(remaining % 60)
 
-    st.sidebar.write(f"Time Remaining: {minutes:02}:{seconds:02}")
+    st.sidebar.write(f"Time remaining: {minutes:02}:{seconds:02}")
 
     if remaining <= 0:
         st.session_state.finished = True
 
-# -----------------------------
-# PROGRESS BAR
-# -----------------------------
-
-progress = len(st.session_state.answers)/len(st.session_state.questions)
-st.progress(progress)
-
-# -----------------------------
+# -----------------------
 # QUESTIONS
-# -----------------------------
+# -----------------------
 
 for i,q in enumerate(st.session_state.questions):
 
     st.subheader(f"Question {i+1}")
 
-    ans = st.radio(
+    answer = st.radio(
         q["question"],
         q["options"],
         key=f"q{i}"
     )
 
-    st.session_state.answers[i] = q["options"].index(ans)
+    st.session_state.answers[i] = q["options"].index(answer)
 
-    if mode == "Study Mode":
+    # Practice mode feedback
+    if mode == "Practice Mode":
 
         if st.session_state.answers[i] == q["answer"]:
             st.success("Correct")
         else:
             st.error("Incorrect")
-            st.write("Correct answer:",q["options"][q["answer"]])
+            st.write("Correct answer:", q["options"][q["answer"]])
 
-        st.write("Explanation:",q["explanation"])
+        st.write("Explanation:", q["explanation"])
 
-# -----------------------------
+# -----------------------
 # SUBMIT
-# -----------------------------
+# -----------------------
 
-if st.button("Submit Exam"):
+if st.button("Submit"):
 
     st.session_state.finished = True
 
-# -----------------------------
+# -----------------------
 # RESULTS
-# -----------------------------
+# -----------------------
 
 if st.session_state.finished:
 
@@ -227,53 +217,28 @@ if st.session_state.finished:
         user = st.session_state.answers.get(i)
 
         if user == correct:
-            score +=1
+            score += 1
             st.success(f"Question {i+1}: Correct")
         else:
             st.error(f"Question {i+1}: Incorrect")
-            st.write("Correct:",q["options"][correct])
+            st.write("Correct answer:", q["options"][correct])
 
-        st.write("Explanation:",q["explanation"])
+        if mode == "Real Exam Mode":
+            st.write("Explanation:", q["explanation"])
+
         st.write("---")
 
-    st.subheader(f"Final Score: {score}/{len(st.session_state.questions)}")
+    st.subheader(f"Score: {score}/{len(st.session_state.questions)}")
 
-    # SAVE RESULTS
+# -----------------------
+# RESET
+# -----------------------
 
-    result = pd.DataFrame({
-        "score":[score],
-        "total":[len(st.session_state.questions)],
-        "date":[pd.Timestamp.now()]
-    })
+if st.button("New Attempt"):
 
-    if os.path.exists("results.csv"):
-        result.to_csv("results.csv",mode="a",header=False,index=False)
-    else:
-        result.to_csv("results.csv",index=False)
-
-    # DASHBOARD
-
-    if os.path.exists("results.csv"):
-
-        st.subheader("Progress Dashboard")
-
-        df = pd.read_csv("results.csv")
-
-        col1,col2 = st.columns(2)
-
-        col1.metric("Average Score", round(df["score"].mean(),2))
-        col2.metric("Attempts", len(df))
-
-        st.line_chart(df["score"])
-
-# -----------------------------
-# NEW EXAM
-# -----------------------------
-
-if st.button("Start New Exam"):
-
-    st.session_state.questions = random.sample(filtered_questions,min(QUESTION_COUNT,len(filtered_questions)))
+    st.session_state.questions = random.sample(question_bank, min(question_count,len(question_bank)))
     st.session_state.answers = {}
     st.session_state.start_time = time.time()
     st.session_state.finished = False
+
     st.rerun()
