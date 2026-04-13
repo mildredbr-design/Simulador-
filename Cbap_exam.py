@@ -513,11 +513,6 @@ ALL_QUESTIONS = [
     #  CHAPTER 2 – Elicitation and Collaboration
     # ═══════════════════════════════════════════════════════════
 
-
-    },
-    # ═══════════════════════════════════════════════════════════
-    #  CHAPTER 2 – Elicitation and Collaboration
-    # ═══════════════════════════════════════════════════════════
     {
         "chapter": "Chapter 2 – Elicitation & Collaboration",
         "question": "During a facilitated workshop, two SMEs provide contradictory information about the same business rule. What should the BA do FIRST?",
